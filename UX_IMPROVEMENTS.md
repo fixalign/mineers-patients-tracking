@@ -5,19 +5,21 @@
 ### 1. 🔄 Spinners/Loaders
 
 #### Dashboard Page:
+
 - **Loading patients**: Shows animated spinner while fetching all patients from the database view
 - **Adding patient**: Shows "Adding..." text on button with disabled state
 
 #### Patient Detail Page:
+
 - **Loading patient info**: Shows animated spinner with message when patient details are loading
 - Full-screen loading state with back link available
 
 #### Modals:
+
 - **Add Procedure Modal**:
   - Shows "Adding..." button text while submitting
   - Buttons disabled during submission
   - Cannot close modal while adding (prevents accidental cancel)
-  
 - **Edit Procedure Modal**:
   - Shows "Saving..." button text while updating
   - Buttons disabled during submission
@@ -26,6 +28,7 @@
 ### 2. 🔍 Search Feature
 
 #### Patient Dashboard Search:
+
 - **Search bar** in the top navigation
 - **Real-time filtering** as you type
 - **Case-insensitive** search
@@ -34,6 +37,7 @@
 - Works on patient name (full_name field)
 
 #### Search Example:
+
 - Type "John" → Shows all patients named John, Jane, Johnson, etc.
 - Type "JOH" → Case-insensitive, still matches all Johns
 - Clear search → Shows all patients again
@@ -41,6 +45,7 @@
 ## Visual Changes
 
 ### Spinner Style:
+
 ```
 Animated circular spinner (border-top accent color)
 Smooth continuous rotation
@@ -48,6 +53,7 @@ Centered on screen with message below
 ```
 
 ### Button States:
+
 ```
 Normal:    bg-indigo-600 text-white (clickable)
 Disabled:  bg-indigo-400 text-white (grayed out, not clickable)
@@ -55,6 +61,7 @@ Hover:     bg-indigo-700 (darkened)
 ```
 
 ### Search Bar:
+
 ```
 Flexible layout with add button
 Input field with placeholder "Search patients..."
@@ -64,6 +71,7 @@ Gray border with indigo ring on focus
 ## Files Modified
 
 1. **src/components/Dashboard.tsx**:
+
    - Added search state with `searchQuery`
    - Filters patients in real-time
    - Shows loading spinner with animation
@@ -96,16 +104,19 @@ Gray border with indigo ring on focus
 ## How to Use
 
 ### Searching:
+
 1. Type patient name in search box
 2. Results filter instantly
 3. Clear search to see all patients again
 
 ### Adding Patient:
+
 1. Click "+ Add New Patient"
 2. Button shows "Adding..." while processing
 3. Dashboard automatically updates when done
 
 ### Editing Procedure:
+
 1. Click "Edit" on a procedure
 2. Make changes
 3. Click "Save"
