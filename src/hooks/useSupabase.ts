@@ -19,18 +19,18 @@ export interface Procedure {
   patient_id: string;
   procedure_name: string;
   date: string;
-  doctor_id: string;
+  doctor_id: string | null;
   price: number;
   paid: number;
   created_at: string;
   updated_at: string;
-  doctors?: Doctor;
+  doctor?: Doctor | null;
 }
 
 export interface PatientNote {
   id: string;
   patient_id: string;
-  content: string;
+  note: string;
   created_at: string;
   updated_at: string;
 }
@@ -239,7 +239,7 @@ export const useNotes = (patientId: string) => {
       const response = await fetch(`/api/patients/${patientId}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ note: content }),
       });
       if (!response.ok) throw new Error("Failed to add note");
       const newNote = await response.json();
@@ -259,7 +259,7 @@ export const useNotes = (patientId: string) => {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ note: content }),
         }
       );
       if (!response.ok) throw new Error("Failed to update note");

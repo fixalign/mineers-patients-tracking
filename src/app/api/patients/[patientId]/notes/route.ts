@@ -34,9 +34,9 @@ export async function POST(
   try {
     const { patientId } = await params;
     const body = await request.json();
-    const { content } = body;
+    const { note } = body;
 
-    if (!content) {
+    if (!note) {
       return NextResponse.json(
         { error: "Note content is required" },
         { status: 400 }
@@ -48,7 +48,7 @@ export async function POST(
       .insert([
         {
           patient_id: patientId,
-          content,
+          note: note,
         },
       ])
       .select();

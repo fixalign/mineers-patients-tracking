@@ -68,21 +68,21 @@ export interface Database {
         Row: {
           id: string;
           patient_id: string;
-          content: string;
+          note: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           patient_id: string;
-          content: string;
+          note: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           patient_id?: string;
-          content?: string;
+          note?: string;
           created_at?: string;
           updated_at?: string;
         };

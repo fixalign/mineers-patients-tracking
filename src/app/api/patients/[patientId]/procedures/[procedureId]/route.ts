@@ -9,8 +9,8 @@ export async function PATCH(
     const { patientId, procedureId } = await params;
     const body = await request.json();
 
-    if (body.doctors) {
-      delete body.doctors;
+    if (body.doctor) {
+      delete body.doctor;
     }
 
     console.log("Updating procedure:", { patientId, procedureId, body });
@@ -19,8 +19,10 @@ export async function PATCH(
       .from("pp_procedures_and_payments")
       .update(body)
       .eq("id", procedureId)
-      .eq("patient_id", patientId)
-      .select();
+      .eq("patient_id", patientId).select(`
+        *,
+        doctor:doctor_id(id, full_name)
+      `);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

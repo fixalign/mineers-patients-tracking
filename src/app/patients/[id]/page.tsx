@@ -37,6 +37,10 @@ export default function PatientPage({ params }: PatientPageProps) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "procedure" | "note";
+    id: string;
+  } | null>(null);
 
   if (patientLoading) {
     return (
@@ -90,16 +94,23 @@ export default function PatientPage({ params }: PatientPageProps) {
     : null;
 
   const handleDeleteProcedure = async (procedureId: string) => {
-    if (confirm("Are you sure you want to delete this procedure?")) {
-      try {
-        await deleteProcedure(procedureId);
-      } catch (err) {
-        alert(
-          `Failed to delete: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-      }
+    setDeleteConfirm({ type: "procedure", id: procedureId });
+  };
+
+  const confirmDeleteProcedure = async () => {
+    if (!deleteConfirm || deleteConfirm.type !== "procedure") return;
+    try {
+      setIsSubmitting(true);
+      await deleteProcedure(deleteConfirm.id);
+      setDeleteConfirm(null);
+    } catch (err) {
+      alert(
+        `Failed to delete: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,12 +133,11 @@ export default function PatientPage({ params }: PatientPageProps) {
   const handleAddProcedureSubmit = async (newProcedure: Procedure) => {
     try {
       setIsSubmitting(true);
-      const doctorId = doctors[0]?.id || "";
       await addProcedure({
         patient_id: patient.id,
         procedure_name: newProcedure.procedure_name,
         date: newProcedure.date,
-        doctor_id: doctorId,
+        doctor_id: newProcedure.doctor_id || null,
         price: newProcedure.price,
         paid: newProcedure.paid,
       });
@@ -163,16 +173,23 @@ export default function PatientPage({ params }: PatientPageProps) {
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (confirm("Are you sure you want to delete this note?")) {
-      try {
-        await deleteNote(noteId);
-      } catch (err) {
-        alert(
-          `Failed to delete: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-      }
+    setDeleteConfirm({ type: "note", id: noteId });
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!deleteConfirm || deleteConfirm.type !== "note") return;
+    try {
+      setIsSubmitting(true);
+      await deleteNote(deleteConfirm.id);
+      setDeleteConfirm(null);
+    } catch (err) {
+      alert(
+        `Failed to delete: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -180,7 +197,7 @@ export default function PatientPage({ params }: PatientPageProps) {
     const note = notes.find((n) => n.id === noteId);
     if (note) {
       setEditingNoteId(noteId);
-      setEditingNoteContent(note.content);
+      setEditingNoteContent(note.note);
     }
   };
 
@@ -229,19 +246,7 @@ export default function PatientPage({ params }: PatientPageProps) {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 shadow">
-            <p className="text-sm text-gray-600 mb-2">Total Price</p>
-            <p className="text-3xl font-bold text-blue-600">
-              ${totalPrice.toFixed(2)}
-            </p>
-          </div>
-          <div className="bg-green-50 p-6 rounded-lg border border-green-200 shadow">
-            <p className="text-sm text-gray-600 mb-2">Total Paid</p>
-            <p className="text-3xl font-bold text-green-600">
-              ${totalPaid.toFixed(2)}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 mb-8">
           <div
             className={`p-6 rounded-lg border shadow ${
               balance > 0
@@ -257,6 +262,20 @@ export default function PatientPage({ params }: PatientPageProps) {
             >
               ${balance.toFixed(2)}
             </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow">
+              <p className="text-xs text-gray-600 mb-1">Total Price</p>
+              <p className="text-xl font-bold text-blue-600">
+                ${totalPrice.toFixed(2)}
+              </p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow">
+              <p className="text-xs text-gray-600 mb-1">Total Paid</p>
+              <p className="text-xl font-bold text-green-600">
+                ${totalPaid.toFixed(2)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -290,7 +309,7 @@ export default function PatientPage({ params }: PatientPageProps) {
                         {procedure.procedure_name}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        {procedure.doctors?.full_name || "Unknown"} •{" "}
+                        {procedure.doctor?.full_name || "No doctor assigned"} •{" "}
                         {procedure.date}
                       </p>
                     </div>
@@ -359,12 +378,21 @@ export default function PatientPage({ params }: PatientPageProps) {
               placeholder="Add a note (optional)..."
               className="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-black"
               rows={3}
+              disabled={isSubmitting}
             />
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2"
             >
-              Add Note
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Adding...
+                </>
+              ) : (
+                "Add Note"
+              )}
             </button>
           </form>
 
@@ -398,9 +426,16 @@ export default function PatientPage({ params }: PatientPageProps) {
                         <button
                           onClick={() => handleSaveEditNote(note.id)}
                           disabled={isSubmitting}
-                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-2 px-4 rounded transition text-sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold py-2 px-4 rounded transition text-sm flex items-center justify-center gap-2"
                         >
-                          {isSubmitting ? "Saving..." : "Save"}
+                          {isSubmitting ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Saving...
+                            </>
+                          ) : (
+                            "Save"
+                          )}
                         </button>
                         <button
                           onClick={handleCancelEditNote}
@@ -435,7 +470,7 @@ export default function PatientPage({ params }: PatientPageProps) {
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-800">{note.content}</p>
+                      <p className="text-gray-800">{note.note}</p>
                     </>
                   )}
                 </div>
@@ -492,10 +527,10 @@ export default function PatientPage({ params }: PatientPageProps) {
                     Doctor
                   </label>
                   <select
-                    defaultValue={procedureToEdit.doctor_id}
+                    defaultValue={procedureToEdit.doctor_id || ""}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     onChange={(e) => {
-                      procedureToEdit.doctor_id = e.target.value;
+                      procedureToEdit.doctor_id = e.target.value || null;
                     }}
                   >
                     <option value="">-- Select a Doctor --</option>
@@ -598,11 +633,58 @@ export default function PatientPage({ params }: PatientPageProps) {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-transparent">
+          <div
+            className="absolute inset-0"
+            onClick={() => !isSubmitting && setDeleteConfirm(null)}
+          />
+          <div className="relative z-10 w-full max-w-md">
+            <div className="bg-white rounded-lg shadow-xl p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Confirm Delete
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {deleteConfirm.type === "procedure"
+                  ? "Are you sure you want to delete this procedure? This action cannot be undone."
+                  : "Are you sure you want to delete this note? This action cannot be undone."}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={
+                    deleteConfirm.type === "procedure"
+                      ? confirmDeleteProcedure
+                      : confirmDeleteNote
+                  }
+                  disabled={isSubmitting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold py-2 px-4 rounded transition flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-// Add Procedure Modal Component
 function AddProcedureModal({
   onClose,
   onAdd,
@@ -617,7 +699,7 @@ function AddProcedureModal({
   const [formData, setFormData] = useState({
     procedure_name: "",
     date: new Date().toISOString().split("T")[0],
-    doctor_id: doctors.length > 0 ? doctors[0].id : "",
+    doctor_id: "",
     price: "",
     paid: "",
   });

@@ -36,14 +36,15 @@ export default function PatientTable({
                 Procedures
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold">
+                Balance
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">
                 Total Price
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold">
                 Money Paid
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">
-                Balance
-              </th>
+
               <th className="px-6 py-4 text-left text-sm font-semibold">
                 Actions
               </th>

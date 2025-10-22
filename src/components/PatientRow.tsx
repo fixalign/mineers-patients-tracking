@@ -40,12 +40,6 @@ export default function PatientRow({ patient, onDelete }: PatientRowProps) {
       <td className="px-6 py-4 text-sm text-gray-800">
         {patient.procedures_count}
       </td>
-      <td className="px-6 py-4 text-sm text-gray-800">
-        ${patient.total_price.toFixed(2)}
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-800">
-        ${patient.total_paid.toFixed(2)}
-      </td>
       <td className="px-6 py-4 text-sm font-semibold">
         <span
           className={patient.balance > 0 ? "text-red-600" : "text-green-600"}
@@ -53,6 +47,13 @@ export default function PatientRow({ patient, onDelete }: PatientRowProps) {
           ${patient.balance.toFixed(2)}
         </span>
       </td>
+      <td className="px-6 py-4 text-sm text-gray-800">
+        ${patient.total_price.toFixed(2)}
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-800">
+        ${patient.total_paid.toFixed(2)}
+      </td>
+
       <td
         className="px-6 py-4 text-sm space-x-2 flex"
         onClick={(e) => e.stopPropagation()}

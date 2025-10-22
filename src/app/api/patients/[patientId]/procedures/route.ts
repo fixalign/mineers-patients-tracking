@@ -13,7 +13,7 @@ export async function GET(
       .select(
         `
         *,
-        doctor_id(id, full_name)
+        doctor:doctor_id(id, full_name)
       `
       )
       .eq("patient_id", patientId)
@@ -59,8 +59,10 @@ export async function POST(
           price,
           paid: paid || 0,
         },
-      ])
-      .select();
+      ]).select(`
+        *,
+        doctor:doctor_id(id, full_name)
+      `);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
