@@ -6,7 +6,6 @@ export async function GET() {
     const { data, error } = await supabase
       .from("doctors")
       .select("*")
-      .eq("is_active", true)
       .order("full_name", { ascending: true });
 
     if (error) {
