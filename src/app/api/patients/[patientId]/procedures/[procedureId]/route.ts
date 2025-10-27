@@ -9,33 +9,74 @@ export async function PATCH(
     const { patientId, procedureId } = await params;
     const body = await request.json();
 
-    if (body.doctor) {
-      delete body.doctor;
-    }
+    // Extract doctor_ids if present
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { doctor_ids, doctor, doctors, ...procedureUpdates } = body;
 
-    console.log("Updating procedure:", { patientId, procedureId, body });
+    console.log("Updating procedure:", {
+      patientId,
+      procedureId,
+      procedureUpdates,
+      doctor_ids,
+    });
 
+    // Update the procedure
     const { data, error } = await supabase
       .from("pp_procedures_and_payments")
-      .update(body)
+      .update(procedureUpdates)
       .eq("id", procedureId)
-      .eq("patient_id", patientId).select(`
-        *,
-        doctor:doctor_id(id, full_name)
-      `);
+      .eq("patient_id", patientId)
+      .select()
+      .single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       return NextResponse.json(
         { error: "Procedure not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(data[0]);
+    // If doctor_ids are provided, update the associations
+    if (doctor_ids !== undefined) {
+      // Delete existing associations
+      await supabase
+        .from("pp_procedure_doctors")
+        .delete()
+        .eq("procedure_id", procedureId);
+
+      // Insert new associations
+      if (doctor_ids.length > 0) {
+        const doctorLinks = doctor_ids.map((docId: string) => ({
+          procedure_id: procedureId,
+          doctor_id: docId,
+        }));
+
+        await supabase.from("pp_procedure_doctors").insert(doctorLinks);
+      }
+    }
+
+    // Fetch the complete procedure with doctors
+    const { data: doctorData } = await supabase
+      .from("pp_procedure_doctors")
+      .select(`doctor:doctor_id(id, full_name)`)
+      .eq("procedure_id", procedureId);
+
+    const procDoctors = (doctorData || [])
+      .map((d) => d.doctor)
+      .filter((d) => d !== null) as unknown as {
+      id: string;
+      full_name: string;
+    }[];
+
+    return NextResponse.json({
+      ...data,
+      doctors: procDoctors,
+      doctor_ids: procDoctors.map((d) => d.id),
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to update procedure" },

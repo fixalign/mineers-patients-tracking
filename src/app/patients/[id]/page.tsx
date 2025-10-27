@@ -138,6 +138,7 @@ export default function PatientPage({ params }: PatientPageProps) {
         procedure_name: newProcedure.procedure_name,
         date: newProcedure.date,
         doctor_id: newProcedure.doctor_id || null,
+        doctor_ids: newProcedure.doctor_ids,
         price: newProcedure.price,
         paid: newProcedure.paid,
       });
@@ -305,12 +306,13 @@ export default function PatientPage({ params }: PatientPageProps) {
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {procedure.procedure_name}
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {procedure.date} - {procedure.procedure_name}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
-                        {procedure.doctor?.full_name || "No doctor assigned"} •{" "}
-                        {procedure.date}
+                        {procedure.doctors && procedure.doctors.length > 0
+                          ? procedure.doctors.map((d) => d.full_name).join(", ")
+                          : procedure.doctor?.full_name || "No doctor assigned"}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -523,23 +525,49 @@ export default function PatientPage({ params }: PatientPageProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Doctor
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Doctors (select multiple)
                   </label>
-                  <select
-                    defaultValue={procedureToEdit.doctor_id || ""}
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    onChange={(e) => {
-                      procedureToEdit.doctor_id = e.target.value || null;
-                    }}
-                  >
-                    <option value="">-- Select a Doctor --</option>
+                  <div className="border border-gray-300 rounded p-3 max-h-48 overflow-y-auto bg-white">
                     {doctors.map((doctor) => (
-                      <option key={doctor.id} value={doctor.id}>
-                        {doctor.full_name}
-                      </option>
+                      <label
+                        key={doctor.id}
+                        className="flex items-center gap-2 py-2 hover:bg-gray-50 px-2 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          defaultChecked={
+                            procedureToEdit.doctor_ids?.includes(doctor.id) ||
+                            procedureToEdit.doctor_id === doctor.id
+                          }
+                          onChange={(e) => {
+                            if (!procedureToEdit.doctor_ids) {
+                              procedureToEdit.doctor_ids =
+                                procedureToEdit.doctor_id
+                                  ? [procedureToEdit.doctor_id]
+                                  : [];
+                            }
+                            if (e.target.checked) {
+                              if (
+                                !procedureToEdit.doctor_ids.includes(doctor.id)
+                              ) {
+                                procedureToEdit.doctor_ids.push(doctor.id);
+                              }
+                            } else {
+                              procedureToEdit.doctor_ids =
+                                procedureToEdit.doctor_ids.filter(
+                                  (id) => id !== doctor.id
+                                );
+                            }
+                          }}
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-900">
+                          {doctor.full_name}
+                        </span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 <div>
@@ -700,6 +728,7 @@ function AddProcedureModal({
     procedure_name: "",
     date: new Date().toISOString().split("T")[0],
     doctor_id: "",
+    doctor_ids: [] as string[],
     price: "",
     paid: "",
   });
@@ -726,6 +755,7 @@ function AddProcedureModal({
       procedure_name: formData.procedure_name,
       date: formData.date,
       doctor_id: formData.doctor_id,
+      doctor_ids: formData.doctor_ids,
       price,
       paid,
       created_at: new Date().toISOString(),
@@ -761,22 +791,41 @@ function AddProcedureModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Doctor
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Doctors (select multiple)
           </label>
-          <select
-            name="doctor_id"
-            value={formData.doctor_id}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">-- Select a Doctor --</option>
+          <div className="border border-gray-300 rounded p-3 max-h-48 overflow-y-auto bg-white">
             {doctors.map((doctor) => (
-              <option key={doctor.id} value={doctor.id}>
-                {doctor.full_name}
-              </option>
+              <label
+                key={doctor.id}
+                className="flex items-center gap-2 py-2 hover:bg-gray-50 px-2 rounded cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.doctor_ids.includes(doctor.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        doctor_ids: [...prev.doctor_ids, doctor.id],
+                      }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        doctor_ids: prev.doctor_ids.filter(
+                          (id) => id !== doctor.id
+                        ),
+                      }));
+                    }
+                  }}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-900">
+                  {doctor.full_name}
+                </span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
 
         <div>

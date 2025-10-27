@@ -19,12 +19,14 @@ export interface Procedure {
   patient_id: string;
   procedure_name: string;
   date: string;
-  doctor_id: string | null;
+  doctor_id: string | null; // Deprecated, kept for backward compatibility
+  doctor_ids?: string[]; // New: array of doctor IDs
   price: number;
   paid: number;
   created_at: string;
   updated_at: string;
-  doctor?: Doctor | null;
+  doctor?: Doctor | null; // Deprecated
+  doctors?: Doctor[]; // New: array of doctors
 }
 
 export interface PatientNote {
