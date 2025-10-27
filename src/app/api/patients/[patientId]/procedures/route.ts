@@ -74,7 +74,7 @@ export async function POST(
   try {
     const { patientId } = await params;
     const body = await request.json();
-    const { procedure_name, date, doctor_id, doctor_ids, price, paid } = body;
+    const { procedure_name, date, doctor_ids, price, paid } = body;
 
     if (!procedure_name || !date || price === undefined) {
       return NextResponse.json(
@@ -91,7 +91,6 @@ export async function POST(
           patient_id: patientId,
           procedure_name,
           date,
-          doctor_id, // Keep for backward compatibility
           price,
           paid: paid || 0,
         },
@@ -104,7 +103,7 @@ export async function POST(
     }
 
     // Insert doctor associations
-    const doctorIdsToInsert = doctor_ids || (doctor_id ? [doctor_id] : []);
+    const doctorIdsToInsert = doctor_ids || [];
 
     if (doctorIdsToInsert.length > 0) {
       const doctorLinks = doctorIdsToInsert.map((docId: string) => ({
