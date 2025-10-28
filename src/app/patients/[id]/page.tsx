@@ -484,13 +484,13 @@ export default function PatientPage({ params }: PatientPageProps) {
 
       {/* Edit Procedure Modal */}
       {procedureToEdit && editingProcedureId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-transparent overflow-y-auto">
           <div
             className="absolute inset-0"
             onClick={() => setEditingProcedureId(null)}
           />
-          <div className="relative z-10 w-full max-w-2xl">
-            <div className="bg-white rounded-lg shadow-xl p-6">
+          <div className="relative z-10 w-full max-w-2xl my-8">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800">
                   Edit Procedure
@@ -646,12 +646,12 @@ export default function PatientPage({ params }: PatientPageProps) {
 
       {/* Add Procedure Modal */}
       {showAddProcedure && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-transparent">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-transparent overflow-y-auto">
           <div
             className="absolute inset-0"
             onClick={() => !isSubmitting && setShowAddProcedure(false)}
           />
-          <div className="relative z-10 w-full max-w-2xl">
+          <div className="relative z-10 w-full max-w-2xl my-8">
             <AddProcedureModal
               onClose={() => setShowAddProcedure(false)}
               onAdd={handleAddProcedureSubmit}
@@ -764,7 +764,7 @@ function AddProcedureModal({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl w-full p-6">
+    <div className="bg-white rounded-lg shadow-xl w-full p-6 max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">Add Procedure</h2>
         <button
