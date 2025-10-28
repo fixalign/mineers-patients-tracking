@@ -34,8 +34,10 @@ export default function PatientPage({ params }: PatientPageProps) {
     null
   );
   const [noteContent, setNoteContent] = useState("");
+  const [noteDate, setNoteDate] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [editingNoteDate, setEditingNoteDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     type: "procedure" | "note";
@@ -159,8 +161,12 @@ export default function PatientPage({ params }: PatientPageProps) {
     if (noteContent.trim()) {
       try {
         setIsSubmitting(true);
-        await addNote(noteContent.trim());
+        const customDate = noteDate
+          ? new Date(noteDate).toISOString()
+          : undefined;
+        await addNote(noteContent.trim(), customDate);
         setNoteContent("");
+        setNoteDate("");
       } catch (err) {
         alert(
           `Failed to add note: ${
@@ -199,6 +205,7 @@ export default function PatientPage({ params }: PatientPageProps) {
     if (note) {
       setEditingNoteId(noteId);
       setEditingNoteContent(note.note);
+      setEditingNoteDate(new Date(note.created_at).toISOString().split("T")[0]);
     }
   };
 
@@ -206,9 +213,13 @@ export default function PatientPage({ params }: PatientPageProps) {
     if (editingNoteContent.trim()) {
       try {
         setIsSubmitting(true);
-        await updateNote(noteId, editingNoteContent.trim());
+        const customDate = editingNoteDate
+          ? new Date(editingNoteDate).toISOString()
+          : undefined;
+        await updateNote(noteId, editingNoteContent.trim(), customDate);
         setEditingNoteId(null);
         setEditingNoteContent("");
+        setEditingNoteDate("");
       } catch (err) {
         alert(
           `Failed to save: ${
@@ -224,6 +235,7 @@ export default function PatientPage({ params }: PatientPageProps) {
   const handleCancelEditNote = () => {
     setEditingNoteId(null);
     setEditingNoteContent("");
+    setEditingNoteDate("");
   };
 
   return (
@@ -374,6 +386,18 @@ export default function PatientPage({ params }: PatientPageProps) {
             onSubmit={handleAddNote}
             className="mb-6 space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200"
           >
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date (optional - defaults to today)
+              </label>
+              <input
+                type="date"
+                value={noteDate}
+                onChange={(e) => setNoteDate(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={isSubmitting}
+              />
+            </div>
             <textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
@@ -413,10 +437,16 @@ export default function PatientPage({ params }: PatientPageProps) {
                   {editingNoteId === note.id ? (
                     // Edit Mode
                     <div className="space-y-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs text-gray-600 font-medium">
-                          {new Date(note.created_at).toLocaleDateString()}
-                        </span>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editingNoteDate}
+                          onChange={(e) => setEditingNoteDate(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                       </div>
                       <textarea
                         value={editingNoteContent}

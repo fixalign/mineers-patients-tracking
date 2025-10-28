@@ -236,12 +236,12 @@ export const useNotes = (patientId: string) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId]);
 
-  const addNote = async (content: string) => {
+  const addNote = async (content: string, customDate?: string) => {
     try {
       const response = await fetch(`/api/patients/${patientId}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: content }),
+        body: JSON.stringify({ note: content, created_at: customDate }),
       });
       if (!response.ok) throw new Error("Failed to add note");
       const newNote = await response.json();
@@ -254,14 +254,18 @@ export const useNotes = (patientId: string) => {
     }
   };
 
-  const updateNote = async (noteId: string, content: string) => {
+  const updateNote = async (
+    noteId: string,
+    content: string,
+    customDate?: string
+  ) => {
     try {
       const response = await fetch(
         `/api/patients/${patientId}/notes/${noteId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ note: content }),
+          body: JSON.stringify({ note: content, created_at: customDate }),
         }
       );
       if (!response.ok) throw new Error("Failed to update note");

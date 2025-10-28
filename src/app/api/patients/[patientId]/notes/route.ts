@@ -34,7 +34,7 @@ export async function POST(
   try {
     const { patientId } = await params;
     const body = await request.json();
-    const { note } = body;
+    const { note, created_at } = body;
 
     if (!note) {
       return NextResponse.json(
@@ -43,14 +43,23 @@ export async function POST(
       );
     }
 
+    const noteData: {
+      patient_id: string;
+      note: string;
+      created_at?: string;
+    } = {
+      patient_id: patientId,
+      note: note,
+    };
+
+    // Only add created_at if provided
+    if (created_at) {
+      noteData.created_at = created_at;
+    }
+
     const { data, error } = await supabase
       .from("pp_notes")
-      .insert([
-        {
-          patient_id: patientId,
-          note: note,
-        },
-      ])
+      .insert([noteData])
       .select();
 
     if (error) {
