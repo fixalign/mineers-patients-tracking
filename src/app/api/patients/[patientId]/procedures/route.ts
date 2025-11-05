@@ -8,10 +8,15 @@ export async function GET(
   try {
     const { patientId } = await params;
 
-    // First, get all procedures
+    // First, get all procedures with service info
     const { data: procedures, error: procError } = await supabase
       .from("pp_procedures_and_payments")
-      .select("*")
+      .select(
+        `
+        *,
+        service:service_id(id, name, description, price)
+      `
+      )
       .eq("patient_id", patientId)
       .order("date", { ascending: false });
 
@@ -74,9 +79,9 @@ export async function POST(
   try {
     const { patientId } = await params;
     const body = await request.json();
-    const { procedure_name, date, doctor_ids, price, paid } = body;
+    const { description, date, doctor_ids, price, paid, service_id } = body;
 
-    if (!procedure_name || !date || price === undefined) {
+    if (!description || !date || price === undefined) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -89,10 +94,11 @@ export async function POST(
       .insert([
         {
           patient_id: patientId,
-          procedure_name,
+          description,
           date,
           price,
           paid: paid || 0,
+          service_id: service_id || null,
         },
       ])
       .select()
@@ -124,7 +130,7 @@ export async function POST(
         return NextResponse.json({ error: linkError.message }, { status: 500 });
       }
 
-      // Fetch the complete procedure with doctors
+      // Fetch the complete procedure with doctors and service
       const { data: doctors } = await supabase
         .from("pp_procedure_doctors")
         .select(`doctor:doctor_id(id, full_name)`)
@@ -137,14 +143,37 @@ export async function POST(
         full_name: string;
       }[];
 
+      // Fetch service if service_id exists
+      let serviceData = null;
+      if (procedureData.service_id) {
+        const { data: service } = await supabase
+          .from("services")
+          .select("id, name, description, price")
+          .eq("id", procedureData.service_id)
+          .single();
+        serviceData = service;
+      }
+
       return NextResponse.json(
         {
           ...procedureData,
           doctors: procDoctors,
           doctor_ids: procDoctors.map((d) => d.id),
+          service: serviceData,
         },
         { status: 201 }
       );
+    }
+
+    // Fetch service if service_id exists (for procedures with no doctors)
+    let serviceData = null;
+    if (procedureData.service_id) {
+      const { data: service } = await supabase
+        .from("services")
+        .select("id, name, description, price")
+        .eq("id", procedureData.service_id)
+        .single();
+      serviceData = service;
     }
 
     return NextResponse.json(
@@ -152,6 +181,7 @@ export async function POST(
         ...procedureData,
         doctors: [],
         doctor_ids: [],
+        service: serviceData,
       },
       { status: 201 }
     );
