@@ -7,8 +7,10 @@ import {
   useProcedures,
   useNotes,
   useDoctors,
+  useServices,
   Procedure,
   Doctor,
+  Service,
 } from "@/hooks/useSupabase";
 
 interface PatientPageProps {
@@ -28,11 +30,13 @@ export default function PatientPage({ params }: PatientPageProps) {
     useProcedures(id);
   const { notes, addNote, updateNote, deleteNote } = useNotes(id);
   const { doctors } = useDoctors();
+  const { services } = useServices();
 
   const [showAddProcedure, setShowAddProcedure] = useState(false);
   const [editingProcedureId, setEditingProcedureId] = useState<string | null>(
     null
   );
+  const [editFormData, setEditFormData] = useState<Partial<Procedure>>({});
   const [noteContent, setNoteContent] = useState("");
   const [noteDate, setNoteDate] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -95,6 +99,11 @@ export default function PatientPage({ params }: PatientPageProps) {
     ? procedures.find((p) => p.id === editingProcedureId)
     : null;
 
+  // Initialize edit form data when procedure to edit changes
+  if (procedureToEdit && editFormData.id !== procedureToEdit.id) {
+    setEditFormData({ ...procedureToEdit });
+  }
+
   const handleDeleteProcedure = async (procedureId: string) => {
     setDeleteConfirm({ type: "procedure", id: procedureId });
   };
@@ -116,11 +125,17 @@ export default function PatientPage({ params }: PatientPageProps) {
     }
   };
 
-  const handleUpdateProcedure = async (updatedProcedure: Procedure) => {
+  const handleUpdateProcedure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFormData.id) return;
+
     try {
       setIsSubmitting(true);
-      await updateProcedure(updatedProcedure.id, updatedProcedure);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { service, doctors, doctor, ...procedureData } = editFormData;
+      await updateProcedure(editFormData.id, procedureData);
       setEditingProcedureId(null);
+      setEditFormData({});
     } catch (err) {
       alert(
         `Failed to update: ${
@@ -137,12 +152,13 @@ export default function PatientPage({ params }: PatientPageProps) {
       setIsSubmitting(true);
       await addProcedure({
         patient_id: patient.id,
-        procedure_name: newProcedure.procedure_name,
+        description: newProcedure.description,
         date: newProcedure.date,
         doctor_id: newProcedure.doctor_id || null,
         doctor_ids: newProcedure.doctor_ids,
         price: newProcedure.price,
         paid: newProcedure.paid,
+        service_id: newProcedure.service_id || null,
       });
       setShowAddProcedure(false);
     } catch (err) {
@@ -319,7 +335,7 @@ export default function PatientPage({ params }: PatientPageProps) {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">
-                        {procedure.date} - {procedure.procedure_name}
+                        {procedure.date} - {procedure.service?.name}
                       </h3>
                       <p className="text-sm text-gray-600 mt-1">
                         {procedure.doctors && procedure.doctors.length > 0
@@ -533,23 +549,67 @@ export default function PatientPage({ params }: PatientPageProps) {
                 </button>
               </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleUpdateProcedure(procedureToEdit);
-                }}
-                className="space-y-4"
-              >
+              <form onSubmit={handleUpdateProcedure} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Procedure Name
+                    Service (optional)
+                  </label>
+                  <select
+                    value={editFormData.service_id || ""}
+                    onChange={(e) => {
+                      const serviceId = e.target.value;
+                      console.log("Edit - Selected service ID:", serviceId);
+
+                      if (!serviceId) {
+                        setEditFormData((prev) => ({
+                          ...prev,
+                          service_id: null,
+                        }));
+                        return;
+                      }
+
+                      const selectedService = services.find(
+                        (s) => String(s.id) === String(serviceId)
+                      );
+                      console.log("Edit - Found service:", selectedService);
+
+                      if (selectedService) {
+                        setEditFormData((prev) => ({
+                          ...prev,
+                          service_id: serviceId,
+                          description: selectedService.name || "",
+                          price:
+                            selectedService.price !== null
+                              ? selectedService.price
+                              : 0,
+                        }));
+                      }
+                    }}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">-- Select a service --</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                        {service.price ? ` - $${service.price.toFixed(2)}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
                   </label>
                   <input
                     type="text"
-                    defaultValue={procedureToEdit.procedure_name}
+                    value={editFormData.description || ""}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     onChange={(e) => {
-                      procedureToEdit.procedure_name = e.target.value;
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }));
                     }}
                   />
                 </div>
@@ -566,28 +626,25 @@ export default function PatientPage({ params }: PatientPageProps) {
                       >
                         <input
                           type="checkbox"
-                          defaultChecked={
-                            procedureToEdit.doctor_ids?.includes(doctor.id) ||
-                            procedureToEdit.doctor_id === doctor.id
+                          checked={
+                            editFormData.doctor_ids?.includes(doctor.id) ||
+                            false
                           }
                           onChange={(e) => {
-                            if (!procedureToEdit.doctor_ids) {
-                              procedureToEdit.doctor_ids =
-                                procedureToEdit.doctor_id
-                                  ? [procedureToEdit.doctor_id]
-                                  : [];
-                            }
+                            const currentDoctorIds =
+                              editFormData.doctor_ids || [];
                             if (e.target.checked) {
-                              if (
-                                !procedureToEdit.doctor_ids.includes(doctor.id)
-                              ) {
-                                procedureToEdit.doctor_ids.push(doctor.id);
-                              }
+                              setEditFormData((prev) => ({
+                                ...prev,
+                                doctor_ids: [...currentDoctorIds, doctor.id],
+                              }));
                             } else {
-                              procedureToEdit.doctor_ids =
-                                procedureToEdit.doctor_ids.filter(
+                              setEditFormData((prev) => ({
+                                ...prev,
+                                doctor_ids: currentDoctorIds.filter(
                                   (id) => id !== doctor.id
-                                );
+                                ),
+                              }));
                             }
                           }}
                           className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
@@ -606,10 +663,13 @@ export default function PatientPage({ params }: PatientPageProps) {
                   </label>
                   <input
                     type="date"
-                    defaultValue={procedureToEdit.date}
+                    value={editFormData.date || ""}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     onChange={(e) => {
-                      procedureToEdit.date = e.target.value;
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        date: e.target.value,
+                      }));
                     }}
                   />
                 </div>
@@ -621,10 +681,13 @@ export default function PatientPage({ params }: PatientPageProps) {
                   <input
                     type="number"
                     step="0.01"
-                    defaultValue={procedureToEdit.price}
+                    value={editFormData.price || ""}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     onChange={(e) => {
-                      procedureToEdit.price = parseFloat(e.target.value);
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        price: parseFloat(e.target.value) || 0,
+                      }));
                     }}
                   />
                 </div>
@@ -636,10 +699,13 @@ export default function PatientPage({ params }: PatientPageProps) {
                   <input
                     type="number"
                     step="0.01"
-                    defaultValue={procedureToEdit.paid}
+                    value={editFormData.paid || ""}
                     className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     onChange={(e) => {
-                      procedureToEdit.paid = parseFloat(e.target.value);
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        paid: parseFloat(e.target.value) || 0,
+                      }));
                     }}
                   />
                 </div>
@@ -647,14 +713,19 @@ export default function PatientPage({ params }: PatientPageProps) {
                 <div className="bg-gray-50 p-3 rounded text-sm text-gray-600">
                   <p>
                     Balance: $
-                    {(procedureToEdit.price - procedureToEdit.paid).toFixed(2)}
+                    {(
+                      (editFormData.price || 0) - (editFormData.paid || 0)
+                    ).toFixed(2)}
                   </p>
                 </div>
 
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setEditingProcedureId(null)}
+                    onClick={() => {
+                      setEditingProcedureId(null);
+                      setEditFormData({});
+                    }}
                     disabled={isSubmitting}
                     className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded transition"
                   >
@@ -686,6 +757,7 @@ export default function PatientPage({ params }: PatientPageProps) {
               onClose={() => setShowAddProcedure(false)}
               onAdd={handleAddProcedureSubmit}
               doctors={doctors}
+              services={services}
               isSubmitting={isSubmitting}
             />
           </div>
@@ -747,20 +819,23 @@ function AddProcedureModal({
   onClose,
   onAdd,
   doctors,
+  services,
   isSubmitting,
 }: {
   onClose: () => void;
   onAdd: (procedure: Procedure) => void;
   doctors: Doctor[];
+  services: Service[];
   isSubmitting: boolean;
 }) {
   const [formData, setFormData] = useState({
-    procedure_name: "",
+    description: "",
     date: new Date().toISOString().split("T")[0],
     doctor_id: "",
     doctor_ids: [] as string[],
     price: "",
     paid: "",
+    service_id: "",
   });
 
   const handleChange = (
@@ -782,7 +857,7 @@ function AddProcedureModal({
     onAdd({
       id: Date.now().toString(),
       patient_id: "",
-      procedure_name: formData.procedure_name,
+      description: formData.description,
       date: formData.date,
       doctor_id: formData.doctor_id,
       doctor_ids: formData.doctor_ids,
@@ -790,6 +865,7 @@ function AddProcedureModal({
       paid,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      service_id: formData.service_id || null,
     });
   };
 
@@ -808,12 +884,63 @@ function AddProcedureModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Procedure Name
+            Service (optional)
+          </label>
+          <select
+            name="service_id"
+            value={formData.service_id}
+            onChange={(e) => {
+              const serviceId = e.target.value;
+              console.log("Selected service ID:", serviceId);
+              console.log("Available services:", services);
+
+              if (!serviceId) {
+                setFormData((prev) => ({
+                  ...prev,
+                  service_id: "",
+                }));
+                return;
+              }
+
+              const selectedService = services.find(
+                (s) => String(s.id) === String(serviceId)
+              );
+              console.log("Found service:", selectedService);
+
+              if (selectedService) {
+                setFormData((prev) => ({
+                  ...prev,
+                  service_id: serviceId,
+                  description: selectedService.name || "",
+                  price:
+                    selectedService.price !== null
+                      ? String(selectedService.price)
+                      : "",
+                }));
+              }
+            }}
+            className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">-- Select a service --</option>
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.name}
+                {service.price !== null
+                  ? ` - $${service.price.toFixed(2)}`
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
           </label>
           <input
             type="text"
-            name="procedure_name"
-            value={formData.procedure_name}
+            name="description"
+            value={formData.description}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="E.g., Cleaning, Root Canal"

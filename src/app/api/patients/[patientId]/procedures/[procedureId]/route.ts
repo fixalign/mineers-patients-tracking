@@ -59,7 +59,7 @@ export async function PATCH(
       }
     }
 
-    // Fetch the complete procedure with doctors
+    // Fetch the complete procedure with doctors and service
     const { data: doctorData } = await supabase
       .from("pp_procedure_doctors")
       .select(`doctor:doctor_id(id, full_name)`)
@@ -72,10 +72,22 @@ export async function PATCH(
       full_name: string;
     }[];
 
+    // Fetch service if service_id exists
+    let serviceData = null;
+    if (data.service_id) {
+      const { data: service } = await supabase
+        .from("services")
+        .select("id, name, description, price")
+        .eq("id", data.service_id)
+        .single();
+      serviceData = service;
+    }
+
     return NextResponse.json({
       ...data,
       doctors: procDoctors,
       doctor_ids: procDoctors.map((d) => d.id),
+      service: serviceData,
     });
   } catch {
     return NextResponse.json(

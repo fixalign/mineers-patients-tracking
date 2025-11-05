@@ -14,10 +14,18 @@ export interface Doctor {
   full_name: string;
 }
 
+export interface Service {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number | null;
+  created_at: string;
+}
+
 export interface Procedure {
   id: string;
   patient_id: string;
-  procedure_name: string;
+  description: string;
   date: string;
   doctor_id: string | null; // Deprecated, kept for backward compatibility
   doctor_ids?: string[]; // New: array of doctor IDs
@@ -27,6 +35,8 @@ export interface Procedure {
   updated_at: string;
   doctor?: Doctor | null; // Deprecated
   doctors?: Doctor[]; // New: array of doctors
+  service_id?: string | null;
+  service?: Service | null;
 }
 
 export interface PatientNote {
@@ -331,6 +341,33 @@ export const useDoctors = () => {
   }, []);
 
   return { doctors, loading, error };
+};
+
+export const useServices = () => {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("/api/services");
+        if (!response.ok) throw new Error("Failed to fetch services");
+        const data = await response.json();
+        setServices(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  return { services, loading, error };
 };
 
 export const usePatientDetail = (patientId: string) => {

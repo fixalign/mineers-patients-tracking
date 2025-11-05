@@ -1,36 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import PatientTable from "@/components/PatientTable";
 import { usePatients } from "@/hooks/useSupabase";
 
 export default function Dashboard() {
-  const { patients, loading, error, addPatient, deletePatient } = usePatients();
-  const [isAdding, setIsAdding] = useState(false);
+  const { patients, loading, error, deletePatient } = usePatients();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter patients based on search query
   const filteredPatients = patients.filter((patient) =>
     patient.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleAddPatient = async () => {
-    const name = prompt("Enter patient name:");
-    if (name && name.trim()) {
-      try {
-        setIsAdding(true);
-        await addPatient(name.trim());
-      } catch (err) {
-        alert(
-          `Failed to add patient: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
-        );
-      } finally {
-        setIsAdding(false);
-      }
-    }
-  };
 
   const handleDeletePatient = async (id: string) => {
     if (confirm("Are you sure you want to delete this patient?")) {
@@ -83,14 +65,20 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="mb-6 flex gap-4 flex-col sm:flex-row">
-          {/* <button
-            onClick={handleAddPatient}
-            disabled={isAdding}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg"
+        <div className="flex gap-4 items-center mb-8">
+          <Link
+            href="/services"
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg text-center"
           >
-            {isAdding ? "Adding..." : "+ Add New Patient"}
-          </button> */}
+            Manage Services
+          </Link>
+
+          <Link
+            href="/stats"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md hover:shadow-lg text-center"
+          >
+            View Statistics
+          </Link>
 
           <input
             type="text"
